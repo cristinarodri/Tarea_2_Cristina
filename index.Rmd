@@ -1,0 +1,135 @@
+---
+title: "Estadísticas policiales"
+author: "Ana Cristina Rodríguez Segura"
+date: "13/6/2022"
+output:
+    html_document:
+    code_folding: hide
+    theme: readable
+    toc: true
+    toc_depth: 5
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE, echo=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(sf)
+library(DT)
+library(readxl)
+```
+
+```{r, message=FALSE, echo=FALSE, warning=FALSE}
+estadisticas <- read_excel("estadisticaspoliciales2021.xls")
+estadisticas=subset(estadisticas, select=c("Delito", "Fecha", "Victima", "Edad", "Genero", "Provincia", "Canton"))
+```
+
+# Tabla con DT
+
+
+
+```{r, message=FALSE, echo=FALSE, warning=FALSE}
+estadisticas$Fecha=as.Date(estadisticas$Fecha)
+colnames(estadisticas)=c("Delito", "Fecha", "Víctima", "Edad", "Género", "Provincia", "Cantón")
+```
+
+```{r, message=FALSE, echo=FALSE, warning=FALSE}
+estadisticas %>%
+  datatable(options = list(
+    pageLength = 5,
+    language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')
+  ))
+```
+
+
+
+
+# Gráfico de barras simples por cantidad de delitos por tipo de delito
+
+
+```{r, grafico_simple, message=FALSE, echo=FALSE, warning=FALSE}
+tabla=summarise(group_by(estadisticas,Delito),
+                n=n())
+
+ggplot2_cantidad_delitos <- 
+  ggplot(tabla,aes(y=reorder(Delito,+n),x=n)) +
+  geom_bar(stat = "identity",fill=c(1:6)) +
+  ggtitle("Cantidad de delitos por tipo de delito") +
+  ylab("Delito") +
+  xlab("Cantidad de delitos") +
+  theme_classic()
+
+ggplotly(ggplot2_cantidad_delitos) %>% config(locale = 'es')
+```
+
+
+
+# Gráfico simple de cantidad de delitos por mes del año
+
+
+
+```{r, delito_mes, message=FALSE, echo=FALSE, warning=FALSE}
+estadisticas$fecha2=as.numeric(format(estadisticas$Fecha,"%m"))
+tabla1=summarise(group_by(estadisticas, fecha2),
+                n=n())
+ggplot2_cantidad_delitos <- 
+  ggplot(tabla1,aes(x=fecha2, y=n)) +
+  geom_bar(stat = "identity", fill=4) +
+  ggtitle("Cantidad de delitos por mes") +
+  ylab("Cantidad de Delito") +
+  xlab("Mes") +
+  scale_x_continuous(breaks = c(1:11),labels = c("Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Setiembre","Octubre","Noviembre"))+
+  theme_classic()
+
+ggplotly(ggplot2_cantidad_delitos) %>% config(locale = 'es')
+```
+
+
+
+# Gráfico de barras apiladas, por tipo de delito
+
+
+```{r, delito_genero, message=FALSE, echo=FALSE, warning=FALSE}
+# ggplotly - Gráfico de barras apiladas de cantidades
+ggplot2_barras_apiladas_cantidad <-
+  estadisticas %>%
+  ggplot(aes(x = estadisticas$Delito, fill = estadisticas$Género)) +
+  geom_bar(position = "fill") +
+  ggtitle("Proporción de Tipo de delitos por género") +
+  xlab("Tipo de Delito") +
+  ylab("Proporción") +
+  labs(fill = "Género") +
+  theme_classic()+
+  coord_flip()
+
+ggplotly(ggplot2_barras_apiladas_cantidad) %>% config(locale = 'es')
+```
+
+
+
+# Gráfico de barras simples para la cantidad de delitos por cantón    
+
+```{r, Delitos_por_cantón, message=FALSE, echo=FALSE, warning=FALSE}
+tabla3=subset(estadisticas, estadisticas$Cantón==c("SAN JOSE","ALAJUELA","CARTAGO","HEREDIA"))
+
+n=summarise(group_by(tabla3,Cantón),
+            cant=n())
+
+ggplot2_delitos_cantones <- 
+  ggplot(n,aes(y=reorder(Cantón,+cant),x=cant)) +
+  geom_bar(stat = "identity",fill=(1:4))+
+  ggtitle("Cantidad de delitos por cantón") +
+  ylab("Cantón") +
+  xlab("Cantidad de delitos") +
+  theme_classic()
+
+ggplotly(ggplot2_delitos_cantones) %>% config(locale = 'es')
+```
+
